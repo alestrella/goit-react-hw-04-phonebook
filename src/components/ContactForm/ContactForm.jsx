@@ -1,74 +1,78 @@
-import { Component } from 'react';
+// import { useState } from 'react';
 import PropTypes from 'prop-types';
-import { Form, Button, Label, Field } from './ContactForm.styled';
+import { Formik } from 'formik';
+import * as Yup from 'yup';
+import NumberFormat from 'react-number-format';
+import {
+  Button,
+  Label,
+  Input,
+  FormStyled,
+  ErrorText,
+} from './ContactForm.styled';
 
-const INITIAL_VALUES = {
+const initialValues = {
   name: '',
   number: '',
 };
 
-class ContactForm extends Component {
-  state = { ...INITIAL_VALUES };
+const contactSchema = Yup.object({
+  name: Yup.string()
+    .min(2, "C'mon, name is longer than that")
+    .matches(
+      /^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$/,
+      "Name may contain only letters, apostrophe, dash and spaces. For example Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan"
+    )
+    .required('Name is required'),
+  number: Yup.string().required('Phone is required'),
+});
 
-  static propTypes = {
-    onSubmit: PropTypes.func.isRequired,
-    checkDuplicates: PropTypes.func.isRequired,
-  };
+const MaskedInput = ({ field, ...props }) => (
+  <NumberFormat
+    type="tel"
+    {...field}
+    {...props}
+    format="+38 (###) ###-####"
+    mask="_"
+    allowEmptyFormatting
+  />
+);
 
-  handleChange = e => {
-    const { name, value } = e.target;
-    this.setState({ [name]: value });
-  };
-
-  handleSubmit = e => {
-    const { onSubmit, checkDuplicates } = this.props;
-    const { name } = this.state;
-    e.preventDefault();
-
-    if (checkDuplicates(name)) {
+export const ContactForm = ({ onSubmit, checkDuplicates }) => {
+  const handleSubmit = (values, { resetForm }) => {
+    if (checkDuplicates(values.name)) {
       return;
     }
-
-    onSubmit({ ...this.state });
-    this.reset();
+    onSubmit({ contact: values });
+    resetForm();
   };
 
-  reset = () => {
-    this.setState({ ...INITIAL_VALUES });
-  };
-
-  render() {
-    const { name, number } = this.state;
-    return (
-      <Form onSubmit={this.handleSubmit}>
+  return (
+    <Formik
+      initialValues={initialValues}
+      onSubmit={handleSubmit}
+      validationSchema={contactSchema}
+    >
+      <FormStyled>
         <Label>
           Name
-          <Field
-            type="text"
-            name="name"
-            value={name}
-            onChange={this.handleChange}
-            pattern="^[a-zA-Zа-яА-Я]+(([' -][a-zA-Zа-яА-Я ])?[a-zA-Zа-яА-Я]*)*$"
-            title="Name may contain only letters, apostrophe, dash and spaces. For example Adrian, Jacob Mercer, Charles de Batz de Castelmore d'Artagnan"
-            required
-          />
+          <Input type="text" name="name" placeholder="Jonh Doe" />
+          <ErrorText name="name" component="div" />
         </Label>
         <Label>
           Number
-          <Field
-            type="tel"
-            name="number"
-            value={number}
-            onChange={this.handleChange}
-            pattern="\+?\d{1,4}?[-.\s]?\(?\d{1,3}?\)?[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,9}"
-            title="Phone number must be digits and can contain spaces, dashes, parentheses and can start with +"
-            required
-          />
+          <Input name="number" component={MaskedInput} />
+          <ErrorText name="number" component="div" />
         </Label>
         <Button type="submit">Add</Button>
-      </Form>
-    );
-  }
-}
+      </FormStyled>
+    </Formik>
+  );
+};
 
 export default ContactForm;
+
+ContactForm.propTypes = {
+  onSubmit: PropTypes.func.isRequired,
+  checkDuplicates: PropTypes.func.isRequired,
+};
