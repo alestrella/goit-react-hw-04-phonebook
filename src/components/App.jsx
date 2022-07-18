@@ -48,6 +48,9 @@ const App = () => {
 
   const deleteContact = id => {
     setContacts(contacts => contacts.filter(contact => contact.id !== id));
+    toast('Bye... Deleted contact', {
+      icon: '😢',
+    });
   };
 
   const handleFilter = e => setFilter(e.currentTarget.value);
